@@ -2,10 +2,11 @@ import express from 'express';
 import mysql from 'mysql2/promise';
 import 'dotenv/config';
 import {db} from './config/db.js';
+import authRoutes from './routes/auth.routes.js';
 
 const app = express();
-
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({status: 'ok'});
