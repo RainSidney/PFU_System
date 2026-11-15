@@ -50,10 +50,10 @@ export const getProductByID = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     const { name, category_id, description, image_url, 
-        price, available_sizes, available_colors, variants } = req.body || {};
-
-    if (!name || price === undefined){
-        return res.status(400).json({ message: "Name and price are required"});
+        price, available_sizes, available_colors, variants } = req.body || {};     
+        
+    if (price === undefined){
+        return res.status(400).json({ message: 'Price are required' });
     }
 
     const conn = await db.getConnection();
@@ -94,3 +94,52 @@ export const createProduct = async (req, res) => {
         conn.release();
     }
 };  
+export const updateProduct = async (req, res) => {
+    try {
+        const { name, category_id, description, image_url, price, available_sizes, available_colors, is_active } = req.body;
+
+        const [result] = await db.query(`
+            UPDATE products 
+            SET product_name = ?,
+                category_id = ?,
+                product_description = ?,
+                image_url = ?,
+                price = ?,
+                sizes = ?,
+                colors = ?,
+                is_active = ?
+            WHERE id  = ?
+        `, [name, category_id, description, image_url, price, JSON.stringify(available_sizes), JSON.stringify(available_colors), is_active, req.params.id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        res.json({ message: 'Product updated' });
+    } catch (err) {
+        console.error(err);
+        if (err.code === 'ER_DUP_ENTRY'){
+            return res.status(404).json({ message: 'Product name already exists'});
+        }
+        res.status(500).json({ message: 'Server Error' });
+    };
+};
+
+export const deleteProduct = async(req, res) => {
+    try {
+        const [result] = await db.query('DELETE FROM products WHERE id = ?', [req.params.id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+        res.json({ message: 'Product deleted' });
+    } catch (err) {
+        if (err.code === 'ER_ROW_IS_REFERENCED_2'){
+            return res.status(409).json({
+                message: 'This product has order and cannot be deleted. Deactivate it instead.',
+            });
+        }
+        console.error(err);
+        res.status(500).json({ message: 'Server error'});
+    }
+};
