@@ -119,7 +119,7 @@ export const updateProduct = async (req, res) => {
     } catch (err) {
         console.error(err);
         if (err.code === 'ER_DUP_ENTRY'){
-            return res.status(404).json({ message: 'Product name already exists'});
+            return res.status(409).json({ message: 'Product name already exists'});
         }
         res.status(500).json({ message: 'Server Error' });
     };
@@ -137,6 +137,86 @@ export const deleteProduct = async(req, res) => {
         if (err.code === 'ER_ROW_IS_REFERENCED_2'){
             return res.status(409).json({
                 message: 'This product has order and cannot be deleted. Deactivate it instead.',
+            });
+        }
+        console.error(err);
+        res.status(500).json({ message: 'Server error'});
+    }
+};
+
+export const addVariant = async(req, res) => {
+    const {sku, size, color, stock} = req.body || {};
+
+    if (!sku) {
+        return res.status(400).json({ message: 'sku is required' });
+    }
+
+    const conn = await db.getConnection();
+
+    try {
+        await conn.beginTransaction();
+        
+        const [result] = await conn.query(
+            `INSERT INTO product_variants
+                (product_id, sku, size, color, stock)
+            VALUES(?, ?, ?, ?, ?)`,
+            [req.params.id, sku, size, color, stock]
+        );
+
+        await conn.commit();
+        res.status(201).json({ message: 'Variant created'});
+    } catch(err) {
+        await conn.rollback();
+        if (err.code === 'ER_DUP_ENTRY'){
+            if(err.sqlMessage.includes('sku')){
+                return res.status(409).json({ message: 'A variant with this sku already exists'})
+            }
+            return res.status(409).json({ message: 'SKU already exists'});
+        }
+        console.error(err);
+        res.status(500).json({ message: 'Server error'});
+    } finally {
+        conn.release();
+    }
+};
+
+export const updateVariant = async (req, res) => {
+    try{
+        const { sku, size, color, stock } = req.body;
+
+        const [result] = await db.query(`
+            UPDATE product_variants
+            SET sku = ?,
+                size = ?,
+                color = ?,
+                stock = ?
+            WHERE id = ?
+        `, [sku, size, color, stock, req.params.variantId]);
+
+        if(result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Variant not found'});
+        }
+        res.json({ message: 'Variant updated'});
+    } catch (err) {
+        console.error(err);
+        if (err.code === 'ER_DUP_ENTRY'){
+            return res.status(409).json({ message: 'Variant sku already exists'});
+        }
+        res.status(500).json({ message: 'Server error'});
+    };
+};
+
+export const deleteVariant = async(req, res) => {
+    try{
+        const [result] = await db.query('DELETE FROM product_variants WHERE id = ?', [req.params.variantId]);
+
+        if (result.affectedRows === 0){
+            return res.status(404).json({ message: 'Variant not found' });
+        }
+        res.json({ message: 'Variant deleted' });
+    } catch (err){
+        if (err.code === 'ER_ROW_IS_REFERENCED_2'){
+            return res.status(409).json({ message: 'This variant has order and cannot be deleted. Deactivate it instead.',
             });
         }
         console.error(err);
