@@ -5,6 +5,7 @@ import {db} from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/products.routes.js';
 import categoriesRoutes from './routes/categories.routes.js'
+import ordersRoutes from './routes/orders.routes.js';
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:5173'}));
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/orders', ordersRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({status: 'ok'});
