@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import api from '../api/axios';
 import ProductModal from "../components/ProductModal";
-
-const formatPrice = (value) =>
-    new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
+import { formatPrice } from "../utils/format";
 
 const renderStatusBadge = (stock) => {
     const qty = Number(stock);
@@ -52,7 +50,7 @@ export default function Products(){
     };
 
     useEffect(() => {
-        loadProdcuts();
+        loadProducts();
     }, []);
 
     const handleDelete = async (product) => {
@@ -60,7 +58,7 @@ export default function Products(){
 
         try {
             await api.delete(`/products/${product.id}`);
-            loadProdcuts();
+            loadProducts();
         } catch (err) {
             alert(err.response?.data?.message || 'Delete failed');
         }

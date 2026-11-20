@@ -1,11 +1,18 @@
 import { Navigate, Outlet } from 'react-router';
 
 export default function AdminRoute() {
-    const user = localStorage.getItem('user') || '{}';
-
-    if (user.role !== 'admin'){
-        return <Navigate to="/dashboard" replace/>
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+        user = null;
     }
 
-    return <Outlet/>;
+    const role = (user?.acc_role || user?.role || '').toLowerCase();
+
+    if (role !== 'admin') {
+        return <Navigate to="/dashboard" replace />;
+    }
+
+    return <Outlet />;
 }
